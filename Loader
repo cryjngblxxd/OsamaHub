@@ -7,87 +7,35 @@ local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
 local SUPPORTED_GAMES = {
-    [4931927012] = {
+    [0] = {
         Name = "Basketball Legends",
-        Endpoint = 'd62049409df7eca297245cefb99a3283',
+        Endpoint = 'BasketballLegends',
     },
     [8307114974] = {
         Name = "Operation One",
-        Endpoint = '62c4e7d75bddac509e3fbba41d3e8e89',
-    },
-    [6858589072] = {
-        Name = "Five Nights Hunted",
-        Endpoint = '9d7b925e68c61f75ae73fdb083ba33d1',
-    },
-    [8250618750] = {
-        Name = "KAT",
-        Endpoint = 'ad7fb6616d4cbf64ffbd7846cf84dc41',
-    },
-    [1489026993] = {
-        Name = "Survive The Killers",
-        Endpoint = 'b73bd82040490dfe5522b492a0607776',
-    },
-    [3104101863] = {
-        Name = "Michaels Zombies",
-        Endpoint = '47ecdb3d25b261d98b756097cfa700bf',
+        Endpoint = 'https://raw.githubusercontent.com/cryjngblxxd/OsamaHub/refs/heads/main/OperationOne',
     },
     [323675642] = {
         Name = "Flood Escape 2",
-        Endpoint = 'bc06e81fb14df87f2cc279747f0e0de2',
-    },
-    [5166944221] = {
-        Name = "Death Ball",
-        Endpoint = 'ee46d2bba5991db3f52ffad681fc01b7', 
-    },
-    [8795154789] = {
-        Name = "Flick",
-        Endpoint = '3629878c0cc219a3c477babd5ee50621',
-    },
-    [2953945619] = {
-        Name = "Friday Night Bloxxin",
-        Endpoint = '5cf45864a627afdcdc11b11da2380daf',
-    },
-    [427040621] = {
-        Name = "Friday Night Partying",
-        Endpoint = '5cf45864a627afdcdc11b11da2380daf',
-    },
-    [964540701] = {
-        Name = "Sound Space",
-        Endpoint = '6692f33b6cfdfa6c8b734f906e301ef4',
-    },
-    [2802559498] = {
-        Name = "Monday Morning Misery",
-        Endpoint = '5cf45864a627afdcdc11b11da2380daf',
-    },
-    [115797356] = {
-        Name = "Counter Blox",
-        Endpoint = 'cacfba3476afec3c75335f57dc018fbb',
-    },
-    [73754455] = {
-        Name = "Survive The Killers In Area 51",
-        Endpoint = 'ce3d34bd2c936d10717835ce906f6638',
-    },
-    [372226183] = {
-        Name = "Flee The Facility",
-        Endpoint = 'b9399313a701685b8dbf2da315bafd66',
-    },
-    [4777817887] = {
-        Name = "Blade Ball",
-        Endpoint = '4806778bfcbf759a1d844d187d72e604', 
-    },
-    [4053293514] = {
-        Name = "Fnaf Eternal Nights",
-        Endpoint = '8e6ec897989b37e9bfd9ad4057ebf626', 
+        Endpoint = 'https://raw.githubusercontent.com/cryjngblxxd/OsamaHub/refs/heads/main/Flood%20Escape%202',
     },
     [9534705677] = {
         Name = "Sniper Arena",
-        Endpoint = '535a0262b7711af98bd8db5687b2f50c',
+        Endpoint = 'https://raw.githubusercontent.com/cryjngblxxd/OsamaHub/refs/heads/main/Sniper%20Arena',
+    },
+    [5166944221] = {
+        Name = "Death Ball",
+        Endpoint = 'https://raw.githubusercontent.com/cryjngblxxd/OsamaHub/refs/heads/main/Death%20Ball',
+    },
+    [7264587281] = {
+        Name = "Sniper Duels",
+        Endpoint = 'https://raw.githubusercontent.com/cryjngblxxd/OsamaHub/refs/heads/main/Sniper%20Duels',
     },
 }
 
-local KEY_LINK = 'https://ads.luarmor.net/get_key?for=Osama_Hub_Key-tEeXFzZtlmaQ'
+local KEY_LINK = 'https://getpolsec.com/ad/087f424ac1ab06368265ea13471a6982409089673c986ffe4ff88a3f03cb1b5b'
 local DISCORD_CODE = 'GTJj2Q8R'
-local KEY_LENGTH = 32
+local KEY_LENGTH = 24
 
 local Theme = {
     Background = Color3.fromRGB(12, 12, 14),
@@ -224,7 +172,7 @@ local function SafeHttpGet(url, retries)
 end
 
 local function LoadGameScript(endpoint, key)
-    local success, scriptSource = SafeHttpGet('https://api.luarmor.net/files/v4/loaders/' .. endpoint .. '.lua')
+    local success, scriptSource = SafeHttpGet('https://raw.githubusercontent.com/YOURUSERNAME/YOURREPO/main/' .. endpoint .. '.lua')
     
     if not success then
         return false, scriptSource
