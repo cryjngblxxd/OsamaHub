@@ -3,83 +3,145 @@ local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 
 local SUPPORTED_GAMES = {
-    [0] = {
-        Name = "Basketball Legends",
-        Endpoint = 'BasketballLegends',
-    },
     [8307114974] = {
         Name = "Operation One",
-        Endpoint = 'https://raw.githubusercontent.com/cryjngblxxd/OsamaHub/refs/heads/main/OperationOne',
+        ScriptId = "SCRIPT_ID_HERE",
+        Icon = "rbxassetid://4599247447",
+        GitHubPath = "OperationOne",
+        ShowInUI = false,
     },
     [323675642] = {
         Name = "Flood Escape 2",
-        Endpoint = 'https://raw.githubusercontent.com/cryjngblxxd/OsamaHub/refs/heads/main/Flood%20Escape%202',
+        ScriptId = "SCRIPT_ID_HERE",
+        Icon = "rbxassetid://4599243781",
+        GitHubPath = "Flood%20Escape%202",
+        ShowInUI = false,
     },
     [9534705677] = {
         Name = "Sniper Arena",
-        Endpoint = 'https://raw.githubusercontent.com/cryjngblxxd/OsamaHub/refs/heads/main/Sniper%20Arena',
+        ScriptId = "10147249909712019408",
+        Icon = "rbxassetid://4599247447",
+        GitHubPath = "Sniper%20Arena",
+        ShowInUI = true,
     },
     [5166944221] = {
         Name = "Death Ball",
-        Endpoint = 'https://raw.githubusercontent.com/cryjngblxxd/OsamaHub/refs/heads/main/Death%20Ball',
+        ScriptId = "SCRIPT_ID_HERE",
+        Icon = "rbxassetid://4599234713",
+        GitHubPath = "Death%20Ball",
+        ShowInUI = false,
     },
     [7264587281] = {
         Name = "Sniper Duels",
-        Endpoint = 'https://raw.githubusercontent.com/cryjngblxxd/OsamaHub/refs/heads/main/Sniper%20Duels',
+        ScriptId = "SCRIPT_ID_HERE",
+        Icon = "rbxassetid://4599250174",
+        GitHubPath = "Sniper%20Duels",
+        ShowInUI = false,
+    },
+    [7265339759] = {
+        Name = "Redliner",
+        ScriptId = "00709564188772914989",
+        Icon = "rbxassetid://4599250174",
+        GitHubPath = "Redliner",
+        ShowInUI = true,
     },
 }
 
+local GITHUB_REPO_OWNER = "cryjngblxxd"
+local GITHUB_REPO_NAME = "OsamaHub"
 local KEY_LINK = 'https://getpolsec.com/ad/087f424ac1ab06368265ea13471a6982409089673c986ffe4ff88a3f03cb1b5b'
 local DISCORD_CODE = 'GTJj2Q8R'
+local DISCORD_DECAL_ID = "116335568857781"
 local KEY_LENGTH = 24
+local LUAPROT_CHECK_SCRIPT_ID = "00709564188772914989"
+
+local UNSUPPORTED_EXECUTORS = {
+    ["xeno"] = true,
+    ["solara"] = true,
+}
+
+local TopLineConfig = {
+    gradient = {
+        enabled = true,
+        speed = 1.2,
+        color1 = Color3.fromRGB(20, 20, 20),
+        color2 = Color3.fromRGB(225, 195, 240),
+    }
+}
 
 local Theme = {
-    Background = Color3.fromRGB(12, 12, 14),
-    BackgroundSecondary = Color3.fromRGB(18, 18, 21),
-    BackgroundTertiary = Color3.fromRGB(24, 24, 28),
-    Accent = Color3.fromRGB(140, 120, 200),
-    AccentDark = Color3.fromRGB(100, 80, 160),
-    TextPrimary = Color3.fromRGB(230, 230, 235),
-    TextSecondary = Color3.fromRGB(150, 150, 155),
-    TextDim = Color3.fromRGB(100, 100, 105),
-    Border = Color3.fromRGB(40, 40, 45),
-    Success = Color3.fromRGB(80, 200, 120),
+    Inline = Color3.fromRGB(50, 50, 50),
+    Gradient = Color3.fromRGB(40, 40, 40),
+    Outline = Color3.fromRGB(20, 20, 20),
+    Accent = Color3.fromRGB(225, 195, 240),
+    Background = Color3.fromRGB(30, 30, 30),
+    TextColor = Color3.fromRGB(239, 239, 239),
+    TextOutline = Color3.fromRGB(0, 0, 0),
+    TabBackground = Color3.fromRGB(26, 26, 26),
+    TextSecondary = Color3.fromRGB(180, 180, 180),
+    TextDim = Color3.fromRGB(130, 130, 130),
+    AccentDark = Color3.fromRGB(180, 150, 200),
+    AccentLight = Color3.fromRGB(240, 220, 250),
+    Success = Color3.fromRGB(80, 220, 130),
     Warning = Color3.fromRGB(230, 180, 60),
     Error = Color3.fromRGB(220, 80, 80),
+    InjectBg = Color3.fromRGB(20, 20, 20),
+    InjectText = Color3.fromRGB(239, 239, 239),
 }
+
+local CustomFontEnum = Enum.Font.SourceSans
+local CustomFontBoldEnum = Enum.Font.SourceSansBold
+
+pcall(function()
+    for _, font in pairs(Enum.Font:GetEnumItems()) do
+        if font.Name == "Verdana" then
+            CustomFontEnum = Enum.Font.Verdana
+            CustomFontBoldEnum = Enum.Font.VerdanaBold
+            break
+        end
+    end
+end)
+
+local function ApplyFont(instance, bold)
+    pcall(function() instance.Font = bold and CustomFontBoldEnum or CustomFontEnum end)
+end
 
 local Loader = {
     Connections = {},
     GUI = nil,
     Destroyed = false,
+    SelectedGame = nil,
+    KeyValid = false,
+    InjectSection = nil,
+    InjectVisible = false,
+    GameButtons = {},
+    InfoTitle = nil,
+    KeyInput = nil,
+    LastUpdateLabels = {},
+    KeyTimeLabels = {},
+    UpdateCache = {},
+    InfoScroll = nil,
+    ValidatedKey = nil,
 }
 
 local function Create(className, properties)
     local instance = Instance.new(className)
     for prop, value in pairs(properties) do
-        if prop ~= "Parent" then
-            instance[prop] = value
-        end
+        if prop ~= "Parent" then pcall(function() instance[prop] = value end) end
     end
-    if properties.Parent then
-        instance.Parent = properties.Parent
-    end
+    if properties.Parent then instance.Parent = properties.Parent end
     return instance
 end
 
-local function Tween(instance, properties, duration)
-    duration = duration or 0.2
-    local tween = TweenService:Create(
-        instance,
-        TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-        properties
-    )
-    tween:Play()
-    return tween
+local function Tween(instance, properties, duration, style, direction)
+    local t = TweenService:Create(instance, TweenInfo.new(duration or 0.2, style or Enum.EasingStyle.Quad, direction or Enum.EasingDirection.Out), properties)
+    t:Play()
+    return t
 end
 
 local function Connect(signal, callback)
@@ -91,7 +153,6 @@ end
 local function MakeDraggable(frame, handle)
     local dragging = false
     local dragStart, startPos
-
     Connect(handle.InputBegan, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
@@ -99,20 +160,13 @@ local function MakeDraggable(frame, handle)
             startPos = frame.Position
         end
     end)
-
     Connect(handle.InputEnded, function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
     end)
-
     Connect(UserInputService.InputChanged, function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
-            frame.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
 end
@@ -120,553 +174,547 @@ end
 local function DestroyLoader()
     if Loader.Destroyed then return end
     Loader.Destroyed = true
-    
     for _, conn in ipairs(Loader.Connections) do
-        if typeof(conn) == "RBXScriptConnection" then
-            pcall(function() conn:Disconnect() end)
-        end
+        if typeof(conn) == "RBXScriptConnection" then pcall(function() conn:Disconnect() end) end
     end
     Loader.Connections = {}
-    
-    if Loader.GUI then
-        pcall(function() Loader.GUI:Destroy() end)
-        Loader.GUI = nil
-    end
-    
+    if Loader.GUI then pcall(function() Loader.GUI:Destroy() end) Loader.GUI = nil end
     task.wait(0.1)
 end
 
 local function PrepareForGameScript()
-    if getgenv then
-        getgenv().Toggles = {}
-        getgenv().Options = {}
-    end
-    
+    if getgenv then getgenv().Toggles = {}; getgenv().Options = {} end
     DestroyLoader()
-    
-    pcall(function()
-        collectgarbage("collect")
-    end)
-    
+    pcall(function() collectgarbage("collect") end)
     task.wait(0.2)
 end
 
 local function SafeHttpGet(url, retries)
     retries = retries or 3
-    
     for i = 1, retries do
-        local success, result = pcall(function()
-            return game:HttpGet(url)
-        end)
-        
-        if success and result and result ~= "" then
-            return true, result
-        end
-        
-        if i < retries then
-            task.wait(0.5)
-        end
+        local success, result = pcall(function() return game:HttpGet(url) end)
+        if success and result and result ~= "" then return true, result end
+        if i < retries then task.wait(0.5) end
     end
-    
     return false, "Failed to fetch"
 end
 
-local function LoadGameScript(endpoint, key)
-    local success, scriptSource = SafeHttpGet('https://raw.githubusercontent.com/YOURUSERNAME/YOURREPO/main/' .. endpoint .. '.lua')
-    
-    if not success then
-        return false, scriptSource
+local function FormatRelativeTime(isoDate)
+    if not isoDate or isoDate == "" then return "Unknown" end
+    local year, month, day, hour, min, sec = isoDate:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)Z")
+    if not year then return "Unknown" end
+    local commitTime = os.time({year=tonumber(year),month=tonumber(month),day=tonumber(day),hour=tonumber(hour),min=tonumber(min),sec=tonumber(sec)})
+    local diff = math.max(0, os.time(os.date("!*t")) - commitTime)
+    if diff < 60 then return diff <= 1 and "just now" or (diff.." seconds ago")
+    elseif diff < 3600 then local m=math.floor(diff/60) return m==1 and "1 minute ago" or m.." minutes ago"
+    elseif diff < 86400 then local h=math.floor(diff/3600) return h==1 and "1 hour ago" or h.." hours ago"
+    elseif diff < 604800 then local d=math.floor(diff/86400) return d==1 and "1 day ago" or d.." days ago"
+    elseif diff < 2592000 then local w=math.floor(diff/604800) return w==1 and "1 week ago" or w.." weeks ago"
+    elseif diff < 31536000 then local mo=math.floor(diff/2592000) return mo==1 and "1 month ago" or mo.." months ago"
+    else local y=math.floor(diff/31536000) return y==1 and "1 year ago" or y.." years ago" end
+end
+
+local function FormatExpiry(data)
+    if not data then return "Unknown" end
+    local s = tonumber(data.expire)
+    if not s or s == 0 then return "Lifetime" end
+    if s < 0 then return "Expired" end
+    if s < 60 then return s.."s left"
+    elseif s < 3600 then return math.floor(s/60).."m left"
+    elseif s < 86400 then return math.floor(s/3600).."h left"
+    elseif s < 2592000 then return math.floor(s/86400).."d left"
+    elseif s < 31536000 then return math.floor(s/2592000).."mo left"
+    else return math.floor(s/31536000).."y left" end
+end
+
+local function FetchLastUpdate(filePath, callback)
+    if Loader.UpdateCache[filePath] then callback(Loader.UpdateCache[filePath]) return end
+    task.spawn(function()
+        local apiUrl = string.format("https://api.github.com/repos/%s/%s/commits?path=%s&per_page=1", GITHUB_REPO_OWNER, GITHUB_REPO_NAME, filePath)
+        local success, response = SafeHttpGet(apiUrl, 2)
+        if not success or not response then callback("Unknown") return end
+        local ok, data = pcall(function() return HttpService:JSONDecode(response) end)
+        if not ok or not data or #data == 0 then callback("Unknown") return end
+        local commit = data[1]
+        if commit and commit.commit and commit.commit.author and commit.commit.author.date then
+            local rel = FormatRelativeTime(commit.commit.author.date)
+            Loader.UpdateCache[filePath] = rel
+            callback(rel)
+        else callback("Unknown") end
+    end)
+end
+
+local function GetExecutorInfo()
+    local executorName = "Unknown"
+    pcall(function() if identifyexecutor then executorName = identifyexecutor() end end)
+    local lowerName = executorName:lower()
+    local supported = true
+    local statusText = "Supported"
+    for unsupportedName in pairs(UNSUPPORTED_EXECUTORS) do
+        if lowerName:find(unsupportedName) then supported = false statusText = "Not Supported" break end
     end
-    
-    local compileSuccess, compiled = pcall(loadstring, scriptSource)
-    
-    if not compileSuccess or not compiled then
-        return false, "Failed to compile script"
+    return executorName, supported, statusText
+end
+
+local function CreateAnimatedGradient(parent, thickness, horizontal)
+    thickness = thickness or 1
+    horizontal = horizontal ~= false
+    local line = Create("Frame", {Parent = parent, BackgroundColor3 = Color3.fromRGB(255,255,255), BorderSizePixel = 0, Size = horizontal and UDim2.new(1,0,0,thickness) or UDim2.new(0,thickness,1,0), ZIndex = 5})
+    local topGradient = Create("UIGradient", {Parent = line, Color = ColorSequence.new(TopLineConfig.gradient.color1, TopLineConfig.gradient.color2), Rotation = horizontal and 0 or 90})
+    local gradientTime = math.random() * 10
+    local NUM_POINTS = 7
+    local pointSeeds = {}
+    for i = 1, NUM_POINTS do
+        pointSeeds[i] = {freqA=0.3+math.random()*0.7, freqB=0.2+math.random()*0.5, phaseA=math.random()*math.pi*2, phaseB=math.random()*math.pi*2}
     end
-    
-    script_key = key
-    _G.script_key = key
-    if getgenv then
-        getgenv().script_key = key
+    local conn
+    conn = RunService.RenderStepped:Connect(function(dt)
+        if not line.Parent then conn:Disconnect() return end
+        if not TopLineConfig.gradient.enabled then return end
+        gradientTime = gradientTime + dt * TopLineConfig.gradient.speed
+        local c1, c2 = TopLineConfig.gradient.color1, TopLineConfig.gradient.color2
+        local keypoints = {}
+        for i = 1, NUM_POINTS do
+            local t = (i-1)/(NUM_POINTS-1)
+            local seed = pointSeeds[i]
+            local blend = math.clamp(0.5 + 0.5 * math.sin(gradientTime*seed.freqA+seed.phaseA) * math.cos(gradientTime*seed.freqB*0.7+seed.phaseB), 0, 1)
+            table.insert(keypoints, ColorSequenceKeypoint.new(t, Color3.new(c1.R+(c2.R-c1.R)*blend, c1.G+(c2.G-c1.G)*blend, c1.B+(c2.B-c1.B)*blend)))
+        end
+        topGradient.Color = ColorSequence.new(keypoints)
+    end)
+    table.insert(Loader.Connections, conn)
+    return line
+end
+
+local function CreateGradientStroke(parent, thickness)
+    thickness = thickness or 1
+    local stroke = Create("UIStroke", {Parent = parent, Color = Color3.fromRGB(255,255,255), Thickness = thickness, Transparency = 0})
+    local gradient = Create("UIGradient", {Parent = stroke, Color = ColorSequence.new(TopLineConfig.gradient.color1, TopLineConfig.gradient.color2), Rotation = 45})
+    local gradientTime = math.random() * 10
+    local NUM_POINTS = 7
+    local pointSeeds = {}
+    for i = 1, NUM_POINTS do
+        pointSeeds[i] = {freqA=0.3+math.random()*0.7, freqB=0.2+math.random()*0.5, phaseA=math.random()*math.pi*2, phaseB=math.random()*math.pi*2}
     end
-    
+    local conn
+    conn = RunService.RenderStepped:Connect(function(dt)
+        if not parent.Parent then conn:Disconnect() return end
+        if not TopLineConfig.gradient.enabled then return end
+        gradientTime = gradientTime + dt * TopLineConfig.gradient.speed
+        local c1, c2 = TopLineConfig.gradient.color1, TopLineConfig.gradient.color2
+        local keypoints = {}
+        for i = 1, NUM_POINTS do
+            local t = (i-1)/(NUM_POINTS-1)
+            local seed = pointSeeds[i]
+            local blend = math.clamp(0.5 + 0.5 * math.sin(gradientTime*seed.freqA+seed.phaseA) * math.cos(gradientTime*seed.freqB*0.7+seed.phaseB), 0, 1)
+            table.insert(keypoints, ColorSequenceKeypoint.new(t, Color3.new(c1.R+(c2.R-c1.R)*blend, c1.G+(c2.G-c1.G)*blend, c1.B+(c2.B-c1.B)*blend)))
+        end
+        gradient.Color = ColorSequence.new(keypoints)
+        gradient.Rotation = (gradientTime * 20) % 360
+    end)
+    table.insert(Loader.Connections, conn)
+    return stroke
+end
+
+local NotificationContainer = nil
+
+local function CreateNotification(parent, title, message, notifType, duration)
+    duration = duration or 3
+    if not NotificationContainer or not NotificationContainer.Parent then
+        NotificationContainer = Create("Frame", {Parent = parent, BackgroundTransparency = 1, Position = UDim2.new(1,-10,1,-10), AnchorPoint = Vector2.new(1,1), Size = UDim2.new(0,280,1,-20), ZIndex = 100})
+        Create("UIListLayout", {Parent = NotificationContainer, Padding = UDim.new(0,8), SortOrder = Enum.SortOrder.LayoutOrder, VerticalAlignment = Enum.VerticalAlignment.Bottom, HorizontalAlignment = Enum.HorizontalAlignment.Right})
+    end
+    local typeColors = {Success = Theme.Success, Warning = Theme.Warning, Error = Theme.Error, Info = Theme.Accent}
+    local accentColor = typeColors[notifType] or Theme.Accent
+    local notif = Create("Frame", {Parent = NotificationContainer, BackgroundColor3 = Theme.TabBackground, BorderSizePixel = 0, Size = UDim2.new(1,0,0,62), ZIndex = 101, ClipsDescendants = true})
+    Create("UIStroke", {Parent = notif, Color = Theme.Outline, Thickness = 1})
+    Create("Frame", {Parent = notif, BackgroundColor3 = accentColor, BorderSizePixel = 0, Size = UDim2.new(0,3,1,0), ZIndex = 102})
+    local titleLabel = Create("TextLabel", {Parent = notif, BackgroundTransparency = 1, Position = UDim2.new(0,14,0,8), Size = UDim2.new(1,-24,0,18), Text = title, TextColor3 = Theme.TextColor, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 102})
+    ApplyFont(titleLabel, true)
+    local msgLabel = Create("TextLabel", {Parent = notif, BackgroundTransparency = 1, Position = UDim2.new(0,14,0,28), Size = UDim2.new(1,-24,0,28), Text = message, TextColor3 = Theme.TextSecondary, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, ZIndex = 102})
+    ApplyFont(msgLabel, false)
+    local progressBar = Create("Frame", {Parent = notif, BackgroundColor3 = accentColor, BackgroundTransparency = 0.3, BorderSizePixel = 0, Position = UDim2.new(0,0,1,-2), Size = UDim2.new(1,0,0,2), ZIndex = 102})
+    notif.Size = UDim2.new(1,0,0,0)
+    Tween(notif, {Size = UDim2.new(1,0,0,62)}, 0.25)
+    Tween(progressBar, {Size = UDim2.new(0,0,0,2)}, duration, Enum.EasingStyle.Linear)
+    task.delay(duration, function()
+        if notif and notif.Parent then
+            Tween(notif, {Size = UDim2.new(1,0,0,0)}, 0.25)
+            task.wait(0.25)
+            if notif and notif.Parent then notif:Destroy() end
+        end
+    end)
+    return notif
+end
+
+local function ValidateKey(key, callback)
+    task.spawn(function()
+        local success, result = pcall(function()
+            local sdk = loadstring(game:HttpGet("https://sdk.luaprot.net/"))()
+            sdk.scriptId = LUAPROT_CHECK_SCRIPT_ID
+            return sdk:checkKey(key)
+        end)
+        if success and result and result.status == "VALID" then
+            callback(true, "Valid", result.data)
+        else
+            callback(false, (result and result.message) or "Invalid Key", nil)
+        end
+    end)
+end
+
+local function LoadGameScript(scriptId, key)
     PrepareForGameScript()
-    
-    local execSuccess, execError = pcall(compiled)
-    
-    if not execSuccess then
-        return false, tostring(execError)
+    _G.lp_key = key
+    if getgenv then getgenv().lp_key = key end
+    pcall(function()
+        local c = (http and http.request) or request
+        local o = {"eu-1","eu-2","us-1"}
+        local h, k = pcall(function() return c({Url = "https://eu-1.luaprot.net/api/v1/nodes/get"}) end)
+        if h and k and k.StatusCode == 200 then
+            local b
+            pcall(function() b = HttpService:JSONDecode(k.Body) end)
+            if b and b.success and b.node then
+                for i, n in pairs(o) do
+                    if n == b.node then table.remove(o, i) table.insert(o, 1, b.node) break end
+                end
+            end
+        end
+        for _, p in pairs(o) do
+            local y
+            pcall(function()
+                y = c({Url = "https://"..p..".luaprot.net/api/v2/loader/get?key="..key.."&scriptId="..scriptId})
+            end)
+            if y and (y.StatusCode == 200 or y.StatusCode == 201) then
+                local b = loadstring(y.Body)
+                if b then b(p) break end
+            end
+        end
+    end)
+end
+
+local function ShowInjectSection()
+    if Loader.InjectVisible or not Loader.InjectSection then return end
+    Loader.InjectVisible = true
+    Loader.InjectSection.Visible = true
+    Tween(Loader.InjectSection, {Size = UDim2.new(1,0,0,42), BackgroundTransparency = 0}, 0.3)
+    local stroke = Loader.InjectSection:FindFirstChild("Stroke")
+    if stroke then Tween(stroke, {Transparency = 0}, 0.3) end
+end
+
+local function HideInjectSection()
+    if not Loader.InjectVisible or not Loader.InjectSection then return end
+    Loader.InjectVisible = false
+    local stroke = Loader.InjectSection:FindFirstChild("Stroke")
+    Tween(Loader.InjectSection, {Size = UDim2.new(1,0,0,0), BackgroundTransparency = 1}, 0.25)
+    if stroke then Tween(stroke, {Transparency = 1}, 0.25) end
+    task.delay(0.25, function()
+        if Loader.InjectSection and not Loader.InjectVisible then Loader.InjectSection.Visible = false end
+    end)
+end
+
+local function CreateGameButton(parent, gameName, iconId, layoutOrder, onClick)
+    local btn = Create("TextButton", {Parent = parent, BackgroundColor3 = Theme.TabBackground, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1,0,0,44), Text = "", AutoButtonColor = false, LayoutOrder = layoutOrder})
+    local stroke = Create("UIStroke", {Parent = btn, Color = Theme.Outline, Thickness = 1, Transparency = 1})
+    local iconContainer = Create("Frame", {Parent = btn, BackgroundTransparency = 1, Position = UDim2.new(0,12,0.5,0), AnchorPoint = Vector2.new(0,0.5), Size = UDim2.new(0,28,0,28), ClipsDescendants = true})
+    local icon = Create("ImageLabel", {Parent = iconContainer, BackgroundTransparency = 1, Position = UDim2.new(0.5,0,0.5,0), AnchorPoint = Vector2.new(0.5,0.5), Size = UDim2.new(1,0,1,0), Image = iconId or "", ImageColor3 = Theme.TextSecondary, ScaleType = Enum.ScaleType.Fit})
+    local label = Create("TextLabel", {Parent = btn, BackgroundTransparency = 1, Position = UDim2.new(0,50,0,0), Size = UDim2.new(1,-55,1,0), Text = gameName, TextColor3 = Theme.TextSecondary, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left})
+    ApplyFont(label, false)
+    local state = {selected = false}
+    local function setSelected(value)
+        state.selected = value
+        if value then
+            Tween(btn, {BackgroundTransparency = 0}, 0.2)
+            Tween(stroke, {Transparency = 0, Color = Theme.Accent}, 0.2)
+            Tween(label, {TextColor3 = Theme.TextColor}, 0.2)
+            Tween(icon, {ImageColor3 = Theme.Accent}, 0.2)
+        else
+            Tween(btn, {BackgroundTransparency = 1}, 0.2)
+            Tween(stroke, {Transparency = 1, Color = Theme.Outline}, 0.2)
+            Tween(label, {TextColor3 = Theme.TextSecondary}, 0.2)
+            Tween(icon, {ImageColor3 = Theme.TextSecondary}, 0.2)
+        end
     end
-    
-    return true, nil
+    Connect(btn.MouseEnter, function() if not state.selected then Tween(label, {TextColor3 = Theme.TextColor}, 0.15) Tween(icon, {ImageColor3 = Theme.TextColor}, 0.15) end end)
+    Connect(btn.MouseLeave, function() if not state.selected then Tween(label, {TextColor3 = Theme.TextSecondary}, 0.15) Tween(icon, {ImageColor3 = Theme.TextSecondary}, 0.15) end end)
+    Connect(btn.MouseButton1Click, function() if onClick then onClick() end end)
+    return btn, setSelected
+end
+
+local function CreateInfoRow(parent, label, value, valueColor, layoutOrder)
+    local row = Create("Frame", {Parent = parent, BackgroundTransparency = 1, Size = UDim2.new(1,0,0,24), LayoutOrder = layoutOrder})
+    local labelEl = Create("TextLabel", {Parent = row, BackgroundTransparency = 1, Position = UDim2.new(0,0,0,0), Size = UDim2.new(0.5,0,1,0), Text = label, TextColor3 = Theme.TextSecondary, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left})
+    ApplyFont(labelEl, false)
+    local valLabel = Create("TextLabel", {Parent = row, BackgroundTransparency = 1, Position = UDim2.new(0.5,0,0,0), Size = UDim2.new(0.5,0,1,0), Text = value, TextColor3 = valueColor or Theme.TextColor, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Right, Name = "Value"})
+    ApplyFont(valLabel, false)
+    return row, valLabel
+end
+
+local function CreateSectionHeader(parent, text, layoutOrder)
+    local container = Create("Frame", {Parent = parent, BackgroundTransparency = 1, Size = UDim2.new(1,0,0,20), LayoutOrder = layoutOrder})
+    local label = Create("TextLabel", {Parent = container, BackgroundTransparency = 1, Size = UDim2.new(0,0,1,0), Text = text, TextColor3 = Theme.TextSecondary, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, AutomaticSize = Enum.AutomaticSize.X})
+    ApplyFont(label, true)
+    return container
 end
 
 local function JoinDiscord()
     if not request then return false end
-    
     pcall(function()
         request({
             Url = "http://127.0.0.1:6463/rpc?v=1",
             Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json",
-                ["Origin"] = "https://discord.com"
-            },
-            Body = HttpService:JSONEncode({
-                cmd = "INVITE_BROWSER",
-                args = { code = DISCORD_CODE },
-                nonce = HttpService:GenerateGUID(false)
-            }),
+            Headers = {["Content-Type"] = "application/json", ["Origin"] = "https://discord.com"},
+            Body = HttpService:JSONEncode({cmd = "INVITE_BROWSER", args = {code = DISCORD_CODE}, nonce = HttpService:GenerateGUID(false)}),
         })
     end)
-    
     return true
 end
 
-local function CreateNotification(parent, title, message, notifType, duration)
-    duration = duration or 3
-    
-    local typeColors = {
-        Success = Theme.Success,
-        Warning = Theme.Warning,
-        Error = Theme.Error,
-        Info = Theme.Accent,
-    }
-    
-    local accentColor = typeColors[notifType] or Theme.Accent
-    
-    local notif = Create("Frame", {
-        Parent = parent,
-        BackgroundColor3 = Theme.BackgroundSecondary,
-        BorderSizePixel = 0,
-        Position = UDim2.new(1, 10, 1, -80),
-        Size = UDim2.new(0, 250, 0, 70),
-        AnchorPoint = Vector2.new(1, 1),
-    })
-    
-    Create("UICorner", { Parent = notif, CornerRadius = UDim.new(0, 6) })
-    Create("UIStroke", { Parent = notif, Color = Theme.Border, Thickness = 1 })
-    
-    local accentLine = Create("Frame", {
-        Parent = notif,
-        BackgroundColor3 = accentColor,
-        BorderSizePixel = 0,
-        Size = UDim2.new(1, 0, 0, 2),
-    })
-    Create("UICorner", { Parent = accentLine, CornerRadius = UDim.new(0, 6) })
-    
-    Create("TextLabel", {
-        Parent = notif,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 12, 0, 10),
-        Size = UDim2.new(1, -24, 0, 18),
-        Font = Enum.Font.GothamBold,
-        Text = title,
-        TextColor3 = Theme.TextPrimary,
-        TextSize = 13,
-        TextXAlignment = Enum.TextXAlignment.Left,
-    })
-    
-    Create("TextLabel", {
-        Parent = notif,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 12, 0, 30),
-        Size = UDim2.new(1, -24, 0, 32),
-        Font = Enum.Font.Gotham,
-        Text = message,
-        TextColor3 = Theme.TextSecondary,
-        TextSize = 11,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextYAlignment = Enum.TextYAlignment.Top,
-        TextWrapped = true,
-    })
-    
-    notif.Position = UDim2.new(1, 270, 1, -80)
-    Tween(notif, { Position = UDim2.new(1, -10, 1, -80) }, 0.3)
-    
-    task.delay(duration, function()
-        if notif and notif.Parent then
-            Tween(notif, { Position = UDim2.new(1, 270, 1, -80) }, 0.3)
-            task.wait(0.3)
-            if notif and notif.Parent then
-                notif:Destroy()
-            end
-        end
-    end)
-    
-    return notif
-end
-
-local function CreateButton(parent, text, position, size, callback)
-    local btn = Create("TextButton", {
-        Parent = parent,
-        BackgroundColor3 = Theme.BackgroundTertiary,
-        BorderSizePixel = 0,
-        Position = position,
-        Size = size,
-        Font = Enum.Font.GothamMedium,
-        Text = text,
-        TextColor3 = Theme.TextPrimary,
-        TextSize = 12,
-        AutoButtonColor = false,
-    })
-    
-    Create("UICorner", { Parent = btn, CornerRadius = UDim.new(0, 4) })
-    Create("UIStroke", { Parent = btn, Color = Theme.Border, Thickness = 1 })
-    
-    Connect(btn.MouseEnter, function()
-        Tween(btn, { BackgroundColor3 = Theme.Accent }, 0.15)
-    end)
-    
-    Connect(btn.MouseLeave, function()
-        Tween(btn, { BackgroundColor3 = Theme.BackgroundTertiary }, 0.15)
-    end)
-    
-    Connect(btn.MouseButton1Click, function()
-        Tween(btn, { BackgroundColor3 = Theme.AccentDark }, 0.1)
-        task.wait(0.1)
-        Tween(btn, { BackgroundColor3 = Theme.Accent }, 0.1)
-        if callback then callback() end
-    end)
-    
-    return btn
-end
-
-local function CreateAccentButton(parent, text, position, size, callback)
-    local btn = Create("TextButton", {
-        Parent = parent,
-        BackgroundColor3 = Theme.Accent,
-        BorderSizePixel = 0,
-        Position = position,
-        Size = size,
-        Font = Enum.Font.GothamMedium,
-        Text = text,
-        TextColor3 = Theme.TextPrimary,
-        TextSize = 12,
-        AutoButtonColor = false,
-    })
-    
-    Create("UICorner", { Parent = btn, CornerRadius = UDim.new(0, 4) })
-    Create("UIStroke", { Parent = btn, Color = Theme.AccentDark, Thickness = 1 })
-    
-    Connect(btn.MouseButton1Click, function()
-        Tween(btn, { BackgroundColor3 = Theme.AccentDark }, 0.1)
-        task.wait(0.1)
-        Tween(btn, { BackgroundColor3 = Theme.Accent }, 0.1)
-        if callback then callback() end
-    end)
-    
-    return btn
-end
-
-local function CreateTextbox(parent, placeholder, position, size)
-    local container = Create("Frame", {
-        Parent = parent,
-        BackgroundColor3 = Theme.Background,
-        BorderSizePixel = 0,
-        Position = position,
-        Size = size,
-    })
-    
-    Create("UICorner", { Parent = container, CornerRadius = UDim.new(0, 4) })
-    Create("UIStroke", { Parent = container, Color = Theme.Border, Thickness = 1 })
-    
-    local textbox = Create("TextBox", {
-        Parent = container,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 10, 0, 0),
-        Size = UDim2.new(1, -20, 1, 0),
-        Font = Enum.Font.Gotham,
-        PlaceholderText = placeholder,
-        PlaceholderColor3 = Theme.TextDim,
-        Text = "",
-        TextColor3 = Theme.TextPrimary,
-        TextSize = 12,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        ClearTextOnFocus = false,
-    })
-    
-    local stroke = container:FindFirstChildOfClass("UIStroke")
-    
-    Connect(textbox.Focused, function()
-        Tween(stroke, { Color = Theme.Accent }, 0.15)
-    end)
-    
-    Connect(textbox.FocusLost, function()
-        Tween(stroke, { Color = Theme.Border }, 0.15)
-    end)
-    
-    return textbox
-end
-
 local function CreateLoaderUI()
-    local currentGameId = game.GameId
-    local gameData = SUPPORTED_GAMES[currentGameId]
-    local isSupported = gameData ~= nil
-    local gameName = gameData and gameData.Name or "Unknown"
-    
-    if isSupported and script_key and script_key ~= '' and #script_key == KEY_LENGTH then
-        local endpoint = gameData.Endpoint
-        if endpoint and endpoint ~= '' then
-            task.wait(0.5)
-            LoadGameScript(endpoint, script_key)
-            return
-        end
-    end
-    
-    if not isSupported then
-        task.delay(3, function()
-            LocalPlayer:Kick("Unsupported game. Join our Discord for game requests!")
-        end)
-        return
-    end
-    
     local existing = CoreGui:FindFirstChild("OsamaHubLoader")
     if existing then existing:Destroy() end
-    
-    local screenGui = Create("ScreenGui", {
-        Name = "OsamaHubLoader",
-        Parent = CoreGui,
-        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-        ResetOnSpawn = false,
-    })
+
+    local screenGui = Create("ScreenGui", {Name = "OsamaHubLoader", Parent = CoreGui, ZIndexBehavior = Enum.ZIndexBehavior.Sibling, ResetOnSpawn = false})
     Loader.GUI = screenGui
-    
-    local main = Create("Frame", {
-        Parent = screenGui,
-        BackgroundColor3 = Theme.Background,
-        BorderSizePixel = 0,
-        Position = UDim2.new(0.5, 0, 0.5, 0),
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Size = UDim2.new(0, 420, 0, 320),
-        ClipsDescendants = true,
-    })
-    
-    Create("UICorner", { Parent = main, CornerRadius = UDim.new(0, 8) })
-    Create("UIStroke", { Parent = main, Color = Theme.Border, Thickness = 1 })
-    
-    local topAccent = Create("Frame", {
-        Parent = main,
-        BackgroundColor3 = Color3.new(1, 1, 1),
-        BorderSizePixel = 0,
-        Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(1, 0, 0, 2),
-    })
-    
-    Create("UIGradient", {
-        Parent = topAccent,
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 150, 255)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(130, 195, 255)),
-        }),
-        Rotation = 0,
-    })
-    
-    local titleBar = Create("Frame", {
-        Parent = main,
-        BackgroundColor3 = Theme.BackgroundSecondary,
-        BorderSizePixel = 0,
-        Position = UDim2.new(0, 0, 0, 2),
-        Size = UDim2.new(1, 0, 0, 40),
-    })
-    
-    Create("TextLabel", {
-        Parent = titleBar,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 15, 0, 0),
-        Size = UDim2.new(0.5, 0, 1, 0),
-        Font = Enum.Font.GothamBold,
-        Text = "Osama Hub",
-        TextColor3 = Theme.TextPrimary,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-    })
-    
-    Create("TextLabel", {
-        Parent = titleBar,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0.5, 0, 0, 0),
-        Size = UDim2.new(0.5, -15, 1, 0),
-        Font = Enum.Font.Gotham,
-        Text = "Loader",
-        TextColor3 = Theme.TextDim,
-        TextSize = 12,
-        TextXAlignment = Enum.TextXAlignment.Right,
-    })
-    
+
+    local main = Create("Frame", {Parent = screenGui, BackgroundColor3 = Theme.Background, BorderSizePixel = 0, Position = UDim2.new(0.5,0,0.5,0), AnchorPoint = Vector2.new(0.5,0.5), Size = UDim2.new(0,580,0,440), ClipsDescendants = true})
+    CreateGradientStroke(main, 1)
+
+    local titleBar = Create("Frame", {Parent = main, BackgroundColor3 = Theme.TabBackground, BorderSizePixel = 0, Size = UDim2.new(1,0,0,40)})
+    local titleLabel = Create("TextLabel", {Parent = titleBar, BackgroundTransparency = 1, Position = UDim2.new(0,16,0,0), Size = UDim2.new(0.5,0,1,0), Text = "OsamaHub Loader", TextColor3 = Theme.TextColor, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Left})
+    ApplyFont(titleLabel, true)
+
+    local discordBtn = Create("ImageButton", {Parent = titleBar, BackgroundTransparency = 1, Position = UDim2.new(1,-72,0.5,0), AnchorPoint = Vector2.new(0,0.5), Size = UDim2.new(0,22,0,22), Image = "rbxthumb://type=Asset&id="..DISCORD_DECAL_ID.."&w=420&h=420", ImageColor3 = Theme.TextSecondary})
+    Connect(discordBtn.MouseEnter, function() Tween(discordBtn, {ImageColor3 = Theme.Accent}, 0.15) end)
+    Connect(discordBtn.MouseLeave, function() Tween(discordBtn, {ImageColor3 = Theme.TextSecondary}, 0.15) end)
+    Connect(discordBtn.MouseButton1Click, function() JoinDiscord() CreateNotification(screenGui, "Discord", "Opening Discord invite", "Info", 3) end)
+
+    local separator = Create("TextLabel", {Parent = titleBar, BackgroundTransparency = 1, Position = UDim2.new(1,-42,0.5,0), AnchorPoint = Vector2.new(0,0.5), Size = UDim2.new(0,8,0,16), Text = "|", TextColor3 = Theme.TextDim, TextSize = 16})
+    ApplyFont(separator, false)
+
+    local closeBtn = Create("TextButton", {Parent = titleBar, BackgroundTransparency = 1, Position = UDim2.new(1,-34,0,0), Size = UDim2.new(0,32,1,0), Text = "×", TextColor3 = Theme.TextSecondary, TextSize = 30, AutoButtonColor = false})
+    ApplyFont(closeBtn, true)
+    Connect(closeBtn.MouseEnter, function() Tween(closeBtn, {TextColor3 = Theme.Error}, 0.15) end)
+    Connect(closeBtn.MouseLeave, function() Tween(closeBtn, {TextColor3 = Theme.TextSecondary}, 0.15) end)
+    Connect(closeBtn.MouseButton1Click, function()
+        Tween(main, {Size = UDim2.new(0,580,0,0), BackgroundTransparency = 1}, 0.3)
+        task.wait(0.3)
+        DestroyLoader()
+    end)
+
     MakeDraggable(main, titleBar)
-    
-    Create("Frame", {
-        Parent = main,
-        BackgroundColor3 = Theme.Border,
-        BorderSizePixel = 0,
-        Position = UDim2.new(0, 0, 0, 42),
-        Size = UDim2.new(1, 0, 0, 1),
-    })
-    
-    local content = Create("Frame", {
-        Parent = main,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, 43),
-        Size = UDim2.new(1, 0, 1, -43),
-    })
-    
-    local leftSection = Create("Frame", {
-        Parent = content,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 15, 0, 15),
-        Size = UDim2.new(0.55, -20, 1, -30),
-    })
-    
-    Create("TextLabel", {
-        Parent = leftSection,
-        BackgroundTransparency = 1,
-        Size = UDim2.new(1, 0, 0, 20),
-        Font = Enum.Font.GothamBold,
-        Text = "Key System",
-        TextColor3 = Theme.TextPrimary,
-        TextSize = 13,
-        TextXAlignment = Enum.TextXAlignment.Left,
-    })
-    
-    Create("TextLabel", {
-        Parent = leftSection,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, 28),
-        Size = UDim2.new(1, 0, 0, 16),
-        Font = Enum.Font.Gotham,
-        Text = "Game: " .. gameName,
-        TextColor3 = Theme.Success,
-        TextSize = 11,
-        TextXAlignment = Enum.TextXAlignment.Left,
-    })
-    
-    local keyInput = CreateTextbox(
-        leftSection,
-        "Paste your key here...",
-        UDim2.new(0, 0, 0, 55),
-        UDim2.new(1, 0, 0, 32)
-    )
-    
-    CreateButton(
-        leftSection,
-        "Get Key",
-        UDim2.new(0, 0, 0, 100),
-        UDim2.new(0.48, 0, 0, 30),
-        function()
-            if setclipboard then
-                setclipboard(KEY_LINK)
-                CreateNotification(screenGui, "Copied!", "Key link copied to clipboard", "Success", 3)
+
+    local titleGradient = CreateAnimatedGradient(main, 1, true)
+    titleGradient.Position = UDim2.new(0,0,0,40)
+
+    local content = Create("Frame", {Parent = main, BackgroundTransparency = 1, Position = UDim2.new(0,0,0,41), Size = UDim2.new(1,0,1,-41)})
+
+    local leftPanel = Create("Frame", {Parent = content, BackgroundColor3 = Theme.TabBackground, BorderSizePixel = 0, Position = UDim2.new(0,12,0,12), Size = UDim2.new(0,200,1,-24)})
+    Create("UIStroke", {Parent = leftPanel, Color = Theme.Outline, Thickness = 1})
+
+    local gamesHeader = Create("Frame", {Parent = leftPanel, BackgroundTransparency = 1, Size = UDim2.new(1,0,0,42)})
+    local gamesHeaderLabel = Create("TextLabel", {Parent = gamesHeader, BackgroundTransparency = 1, Position = UDim2.new(0,14,0,0), Size = UDim2.new(1,-28,1,0), Text = "Games", TextColor3 = Theme.TextColor, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Left})
+    ApplyFont(gamesHeaderLabel, true)
+    local gamesHeaderGradient = CreateAnimatedGradient(gamesHeader, 1, true)
+    gamesHeaderGradient.Position = UDim2.new(0,0,1,-1)
+
+    local gameList = Create("ScrollingFrame", {Parent = leftPanel, BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.new(0,8,0,48), Size = UDim2.new(1,-16,1,-56), CanvasSize = UDim2.new(0,0,0,0), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 0, ScrollBarImageTransparency = 1, ScrollingDirection = Enum.ScrollingDirection.Y})
+    Create("UIListLayout", {Parent = gameList, Padding = UDim.new(0,6), SortOrder = Enum.SortOrder.LayoutOrder})
+
+    local rightPanel = Create("Frame", {Parent = content, BackgroundColor3 = Theme.TabBackground, BorderSizePixel = 0, Position = UDim2.new(0,222,0,12), Size = UDim2.new(1,-234,1,-24)})
+    Create("UIStroke", {Parent = rightPanel, Color = Theme.Outline, Thickness = 1})
+
+    local infoHeader = Create("Frame", {Parent = rightPanel, BackgroundTransparency = 1, Size = UDim2.new(1,0,0,42)})
+    local infoTitle = Create("TextLabel", {Parent = infoHeader, BackgroundTransparency = 1, Position = UDim2.new(0,14,0,0), Size = UDim2.new(1,-28,1,0), Text = "Select a Game", TextColor3 = Theme.TextColor, TextSize = 15, TextXAlignment = Enum.TextXAlignment.Left})
+    ApplyFont(infoTitle, true)
+    Loader.InfoTitle = infoTitle
+
+    local headerGradient = CreateAnimatedGradient(infoHeader, 1, true)
+    headerGradient.Position = UDim2.new(0,0,1,-1)
+
+    local infoScroll = Create("ScrollingFrame", {Parent = rightPanel, BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.new(0,14,0,50), Size = UDim2.new(1,-28,1,-62), CanvasSize = UDim2.new(0,0,0,0), AutomaticCanvasSize = Enum.AutomaticSize.Y, ScrollBarThickness = 0, ScrollBarImageTransparency = 1, ScrollingDirection = Enum.ScrollingDirection.Y})
+    Loader.InfoScroll = infoScroll
+
+    local infoContent = Create("Frame", {Parent = infoScroll, BackgroundTransparency = 1, Size = UDim2.new(1,0,0,0), AutomaticSize = Enum.AutomaticSize.Y})
+    Create("UIListLayout", {Parent = infoContent, Padding = UDim.new(0,8), SortOrder = Enum.SortOrder.LayoutOrder})
+
+    CreateSectionHeader(infoContent, "KEY", 1)
+
+    local keyContainer = Create("Frame", {Parent = infoContent, BackgroundColor3 = Theme.Background, BorderSizePixel = 0, Size = UDim2.new(1,0,0,32), LayoutOrder = 2})
+    Create("UIStroke", {Parent = keyContainer, Color = Theme.Outline, Thickness = 1, Name = "Stroke"})
+
+    local keyInput = Create("TextBox", {Parent = keyContainer, BackgroundTransparency = 1, Position = UDim2.new(0,10,0,0), Size = UDim2.new(1,-85,1,0), PlaceholderText = "Paste your key", PlaceholderColor3 = Theme.TextDim, Text = "", TextColor3 = Theme.TextColor, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false})
+    ApplyFont(keyInput, false)
+    Loader.KeyInput = keyInput
+
+    local getKeyBtn = Create("TextButton", {Parent = keyContainer, BackgroundColor3 = Theme.Accent, BackgroundTransparency = 0.85, BorderSizePixel = 0, Position = UDim2.new(1,-75,0.5,0), AnchorPoint = Vector2.new(0,0.5), Size = UDim2.new(0,70,0,24), Text = "Get Key", TextColor3 = Theme.AccentLight, TextSize = 12, AutoButtonColor = false})
+    ApplyFont(getKeyBtn, false)
+    Connect(getKeyBtn.MouseEnter, function() Tween(getKeyBtn, {BackgroundTransparency = 0.7}, 0.15) end)
+    Connect(getKeyBtn.MouseLeave, function() Tween(getKeyBtn, {BackgroundTransparency = 0.85}, 0.15) end)
+    Connect(getKeyBtn.MouseButton1Click, function()
+        if setclipboard then
+            setclipboard(KEY_LINK)
+            CreateNotification(screenGui, "Copied", "Key link copied to clipboard", "Success", 3)
+        else
+            CreateNotification(screenGui, "Error", "Clipboard not available", "Error", 3)
+        end
+    end)
+
+    local checkKeyBtn = Create("TextButton", {Parent = infoContent, BackgroundColor3 = Theme.Gradient, BorderSizePixel = 0, Size = UDim2.new(1,0,0,30), Text = "Check Key", TextColor3 = Theme.TextColor, TextSize = 13, AutoButtonColor = false, LayoutOrder = 3})
+    ApplyFont(checkKeyBtn, false)
+
+    local checking = false
+    Connect(checkKeyBtn.MouseButton1Click, function()
+        if checking then return end
+        local key = keyInput.Text:gsub("^%s+", ""):gsub("%s+$", "")
+        if not key or key == "" then
+            CreateNotification(screenGui, "Empty Key", "Please enter a key first", "Warning", 3)
+            Loader.KeyValid = false
+            HideInjectSection()
+            return
+        end
+        if #key ~= KEY_LENGTH then
+            CreateNotification(screenGui, "Invalid Key", "Key must be "..KEY_LENGTH.." characters", "Error", 3)
+            Loader.KeyValid = false
+            HideInjectSection()
+            return
+        end
+        checking = true
+        checkKeyBtn.Text = "Checking..."
+        ValidateKey(key, function(success, message, data)
+            checking = false
+            checkKeyBtn.Text = "Check Key"
+            if success then
+                Loader.KeyValid = true
+                Loader.ValidatedKey = key
+                local expiryText = FormatExpiry(data)
+                if Loader.KeyTimeLabels[1] then
+                    Loader.KeyTimeLabels[1].Text = expiryText
+                    Loader.KeyTimeLabels[1].TextColor3 = expiryText == "Expired" and Theme.Error or Theme.Success
+                end
+                CreateNotification(screenGui, "Key Valid", "Expires: "..expiryText, "Success", 3)
+                if Loader.SelectedGame then ShowInjectSection() else CreateNotification(screenGui, "No Game", "Please select a game from the list", "Warning", 3) end
             else
-                CreateNotification(screenGui, "Error", "Clipboard not available", "Error", 3)
+                Loader.KeyValid = false
+                Loader.ValidatedKey = nil
+                if Loader.KeyTimeLabels[1] then
+                    Loader.KeyTimeLabels[1].Text = "Invalid"
+                    Loader.KeyTimeLabels[1].TextColor3 = Theme.Error
+                end
+                CreateNotification(screenGui, "Key Check Failed", message or "Invalid key", "Error", 3)
+                HideInjectSection()
             end
+        end)
+    end)
+
+    CreateSectionHeader(infoContent, "INFORMATION", 4)
+
+    local _, lastUpdateLabel = CreateInfoRow(infoContent, "Last Update", "Loading...", Theme.TextDim, 5)
+    Loader.LastUpdateLabels[1] = lastUpdateLabel
+    CreateInfoRow(infoContent, "Status", "Undetected", Theme.Success, 6)
+
+    CreateSectionHeader(infoContent, "ADDITIONAL INFO", 7)
+
+    local execName, execSupported, execStatus = GetExecutorInfo()
+    local execColor = execSupported and Theme.Success or Theme.Error
+    CreateInfoRow(infoContent, "Executor", execName.." ("..execStatus..")", execColor, 8)
+
+    local _, keyTimeLabel = CreateInfoRow(infoContent, "Key Time", "Not checked", Theme.TextDim, 9)
+    Loader.KeyTimeLabels[1] = keyTimeLabel
+
+    local injectSection = Create("Frame", {Parent = infoContent, BackgroundColor3 = Theme.InjectBg, BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1,0,0,0), Visible = false, LayoutOrder = 10, ClipsDescendants = true})
+    Create("UIStroke", {Parent = injectSection, Color = Theme.Outline, Thickness = 1, Name = "Stroke", Transparency = 1})
+    Loader.InjectSection = injectSection
+
+    local injectBtn = Create("TextButton", {Parent = injectSection, BackgroundColor3 = Theme.InjectBg, BorderSizePixel = 0, Size = UDim2.new(1,0,1,0), Text = "INJECT", TextColor3 = Theme.InjectText, TextSize = 15, AutoButtonColor = false})
+    ApplyFont(injectBtn, true)
+    Create("UIStroke", {Parent = injectBtn, Color = Theme.Outline, Thickness = 1, Name = "BtnStroke"})
+
+    Connect(injectBtn.MouseButton1Click, function()
+        if not Loader.InjectVisible then return end
+        local key = Loader.ValidatedKey or keyInput.Text:gsub("^%s+", ""):gsub("%s+$", "")
+        if not Loader.KeyValid or #key ~= KEY_LENGTH then
+            CreateNotification(screenGui, "Error", "Verify your key first", "Warning", 3)
+            return
         end
-    )
-    
-    CreateButton(
-        leftSection,
-        "Discord",
-        UDim2.new(0.52, 0, 0, 100),
-        UDim2.new(0.48, 0, 0, 30),
-        function()
-            JoinDiscord()
-            CreateNotification(screenGui, "Discord", "Opening Discord invite...", "Info", 3)
+        if not Loader.SelectedGame then
+            CreateNotification(screenGui, "Error", "Select a game first", "Warning", 3)
+            return
         end
-    )
-    
-    CreateAccentButton(
-        leftSection,
-        "Confirm Key",
-        UDim2.new(0, 0, 0, 145),
-        UDim2.new(1, 0, 0, 36),
-        function()
-            local key = keyInput.Text
-            
-            if not key or key == "" then
-                CreateNotification(screenGui, "Error", "Please enter a key", "Warning", 3)
-                return
-            end
-            
-            key = key:gsub("^%s+", ""):gsub("%s+$", "")
-            
-            if #key ~= KEY_LENGTH then
-                CreateNotification(screenGui, "Error", "Invalid key length (need " .. KEY_LENGTH .. " chars)", "Warning", 3)
-                return
-            end
-            
-            local endpoint = gameData.Endpoint
-            
-            if not endpoint or endpoint == "" then
-                CreateNotification(screenGui, "Error", "Script not available for this game yet", "Warning", 3)
-                return
-            end
-            
-            CreateNotification(screenGui, "Loading", "Fetching script...", "Info", 2)
-            
-            task.wait(0.5)
-            
-            LoadGameScript(endpoint, key)
+        if not execSupported then
+            CreateNotification(screenGui, "Unsupported", "Your executor is not supported", "Error", 3)
+            return
         end
-    )
-    
-    local rightSection = Create("Frame", {
-        Parent = content,
-        BackgroundColor3 = Theme.BackgroundSecondary,
-        BorderSizePixel = 0,
-        Position = UDim2.new(0.55, 5, 0, 15),
-        Size = UDim2.new(0.45, -20, 1, -30),
-    })
-    
-    Create("UICorner", { Parent = rightSection, CornerRadius = UDim.new(0, 6) })
-    Create("UIStroke", { Parent = rightSection, Color = Theme.Border, Thickness = 1 })
-    
-    Create("TextLabel", {
-        Parent = rightSection,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 12, 0, 12),
-        Size = UDim2.new(1, -24, 0, 18),
-        Font = Enum.Font.GothamBold,
-        Text = "Information",
-        TextColor3 = Theme.TextPrimary,
-        TextSize = 12,
-        TextXAlignment = Enum.TextXAlignment.Left,
-    })
-    
-    local infoText = string.format(
-        "User: %s\nGame: %s\n\n• Get key from Discord\n• Paste and confirm\n• One key per user\n• Keys reset daily",
-        LocalPlayer.Name,
-        gameName
-    )
-    
-    Create("TextLabel", {
-        Parent = rightSection,
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 12, 0, 35),
-        Size = UDim2.new(1, -24, 1, -47),
-        Font = Enum.Font.Gotham,
-        Text = infoText,
-        TextColor3 = Theme.TextSecondary,
-        TextSize = 10,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextYAlignment = Enum.TextYAlignment.Top,
-        TextWrapped = true,
-    })
-    
-    main.Size = UDim2.new(0, 420, 0, 0)
+        local expectedGameId = nil
+        for gId, gData in pairs(SUPPORTED_GAMES) do
+            if gData == Loader.SelectedGame then expectedGameId = gId break end
+        end
+        if expectedGameId and expectedGameId ~= game.GameId then
+            CreateNotification(screenGui, "Wrong Game", "You are not in "..Loader.SelectedGame.Name, "Error", 4)
+            task.wait(2)
+            LocalPlayer:Kick("Wrong game. Please join "..Loader.SelectedGame.Name..".")
+            return
+        end
+        CreateNotification(screenGui, "Loading", "Fetching script", "Info", 2)
+        task.wait(0.5)
+        LoadGameScript(Loader.SelectedGame.ScriptId, key)
+    end)
+
+    local currentGameId = game.GameId
+    local order = 1
+
+    for gameId, gameData in pairs(SUPPORTED_GAMES) do
+        if gameData.ShowInUI == true then
+            local btn, setSelected
+            btn, setSelected = CreateGameButton(gameList, gameData.Name, gameData.Icon, order, function()
+                for _, info in pairs(Loader.GameButtons) do info.setSelected(false) end
+                setSelected(true)
+                Loader.SelectedGame = gameData
+                Loader.InfoTitle.Text = gameData.Name
+                if Loader.LastUpdateLabels[1] then
+                    Loader.LastUpdateLabels[1].Text = "Loading..."
+                    Loader.LastUpdateLabels[1].TextColor3 = Theme.TextDim
+                    FetchLastUpdate(gameData.GitHubPath, function(relativeTime)
+                        if Loader.LastUpdateLabels[1] and Loader.LastUpdateLabels[1].Parent then
+                            Loader.LastUpdateLabels[1].Text = relativeTime
+                            Loader.LastUpdateLabels[1].TextColor3 = Theme.TextColor
+                        end
+                    end)
+                end
+                if Loader.KeyValid then ShowInjectSection() end
+            end)
+            Loader.GameButtons[gameId] = {btn = btn, setSelected = setSelected}
+            order = order + 1
+        end
+    end
+
+    if SUPPORTED_GAMES[currentGameId] and SUPPORTED_GAMES[currentGameId].ShowInUI == true then
+        local info = Loader.GameButtons[currentGameId]
+        if info then
+            info.setSelected(true)
+            Loader.SelectedGame = SUPPORTED_GAMES[currentGameId]
+            Loader.InfoTitle.Text = SUPPORTED_GAMES[currentGameId].Name
+            FetchLastUpdate(SUPPORTED_GAMES[currentGameId].GitHubPath, function(relativeTime)
+                if Loader.LastUpdateLabels[1] and Loader.LastUpdateLabels[1].Parent then
+                    Loader.LastUpdateLabels[1].Text = relativeTime
+                    Loader.LastUpdateLabels[1].TextColor3 = Theme.TextColor
+                end
+            end)
+        end
+    end
+
+    main.Size = UDim2.new(0,580,0,0)
     main.BackgroundTransparency = 1
-    
-    Tween(main, { Size = UDim2.new(0, 420, 0, 320), BackgroundTransparency = 0 }, 0.4)
-    
+    Tween(main, {Size = UDim2.new(0,580,0,440), BackgroundTransparency = 0}, 0.4)
+
     task.delay(0.5, function()
         if not Loader.Destroyed then
-            CreateNotification(screenGui, "Osama Hub", "Game: " .. gameName, "Success", 4)
+            local gameName = (SUPPORTED_GAMES[currentGameId] and SUPPORTED_GAMES[currentGameId].ShowInUI) and SUPPORTED_GAMES[currentGameId].Name or "Unsupported"
+            CreateNotification(screenGui, "OsamaHub Loader", "Game: "..gameName, "Success", 4)
         end
     end)
 end
 
 local existingLoader = CoreGui:FindFirstChild("OsamaHubLoader")
-if existingLoader then
-    existingLoader:Destroy()
-end
+if existingLoader then existingLoader:Destroy() end
 
 CreateLoaderUI()
