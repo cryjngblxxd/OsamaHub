@@ -11,42 +11,49 @@ local SUPPORTED_GAMES = {
     [8307114974] = {
         Name = "Operation One",
         ScriptId = "SCRIPT_ID_HERE",
-        Icon = "rbxassetid://4599247447",
+        Icon = "rbxassetid://87905951788220",
         GitHubPath = "OperationOne",
         ShowInUI = false,
     },
     [323675642] = {
         Name = "Flood Escape 2",
-        ScriptId = "SCRIPT_ID_HERE",
-        Icon = "rbxassetid://4599243781",
+        ScriptId = "51021004320927609743",
+        Icon = "rbxassetid://135412900878575",
         GitHubPath = "Flood%20Escape%202",
-        ShowInUI = false,
+        ShowInUI = true,
+    },
+    [10090256806] = {
+        Name = "TTK TESTING",
+        ScriptId = "48064327276179372357",
+        Icon = "rbxassetid://125416183674924",
+        GitHubPath = "TTK%20TESTING",
+        ShowInUI = true,
     },
     [9534705677] = {
         Name = "Sniper Arena",
         ScriptId = "10147249909712019408",
-        Icon = "rbxassetid://4599247447",
+        Icon = "rbxassetid://75649814233484",
         GitHubPath = "Sniper%20Arena",
         ShowInUI = true,
     },
     [5166944221] = {
         Name = "Death Ball",
-        ScriptId = "SCRIPT_ID_HERE",
-        Icon = "rbxassetid://4599234713",
+        ScriptId = "13155764070449933538",
+        Icon = "rbxassetid://121406454377051",
         GitHubPath = "Death%20Ball",
-        ShowInUI = false,
+        ShowInUI = true,
     },
     [7264587281] = {
         Name = "Sniper Duels",
         ScriptId = "SCRIPT_ID_HERE",
-        Icon = "rbxassetid://4599250174",
+        Icon = "rbxassetid://137351193301090",
         GitHubPath = "Sniper%20Duels",
-        ShowInUI = false,
+        ShowInUI = true,
     },
     [7265339759] = {
         Name = "Redliner",
         ScriptId = "00709564188772914989",
-        Icon = "rbxassetid://4599250174",
+        Icon = "rbxassetid://121406454377051",
         GitHubPath = "Redliner",
         ShowInUI = true,
     },
@@ -54,7 +61,7 @@ local SUPPORTED_GAMES = {
 
 local GITHUB_REPO_OWNER = "cryjngblxxd"
 local GITHUB_REPO_NAME = "OsamaHub"
-local KEY_LINK = 'https://getpolsec.com/ad/087f424ac1ab06368265ea13471a6982409089673c986ffe4ff88a3f03cb1b5b'
+local KEY_LINK = 'https://www.osamahub.xyz/'
 local DISCORD_CODE = 'GTJj2Q8R'
 local DISCORD_DECAL_ID = "116335568857781"
 local KEY_LENGTH = 24
