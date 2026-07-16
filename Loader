@@ -50,7 +50,7 @@ local SUPPORTED_GAMES = {
         GitHubPath = "Sniper%20Duels",
         ShowInUI = true,
     },
-    [7264587281] = {
+    [5091490171] = {
         Name = "Jailbird",
         ScriptId = "00364469983523684769",
         Icon = "rbxassetid://85112456002145",
