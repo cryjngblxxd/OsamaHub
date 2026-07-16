@@ -50,6 +50,13 @@ local SUPPORTED_GAMES = {
         GitHubPath = "Sniper%20Duels",
         ShowInUI = true,
     },
+    [7264587281] = {
+        Name = "Jailbird",
+        ScriptId = "00364469983523684769",
+        Icon = "rbxassetid://85112456002145",
+        GitHubPath = "Jailbird",
+        ShowInUI = true,
+    },
     [7265339759] = {
         Name = "Redliner",
         ScriptId = "00709564188772914989",
