@@ -10,10 +10,11 @@ local LocalPlayer = Players.LocalPlayer
 local SUPPORTED_GAMES = {
     [8307114974] = {
         Name = "Operation One",
-        ScriptId = "SCRIPT_ID_HERE",
-        Icon = "rbxassetid://87905951788220",
+        ScriptId = "55820414431122873263",
+        Icon = "rbxassetid://91586468475195",
         GitHubPath = "OperationOne",
-        ShowInUI = false,
+        ShowInUI = true,
+        Status = "Undetected",
     },
     [323675642] = {
         Name = "Flood Escape 2",
@@ -21,6 +22,7 @@ local SUPPORTED_GAMES = {
         Icon = "rbxassetid://135412900878575",
         GitHubPath = "Flood%20Escape%202",
         ShowInUI = true,
+        Status = "Undetected",
     },
     [10090256806] = {
         Name = "TTK TESTING",
@@ -28,6 +30,7 @@ local SUPPORTED_GAMES = {
         Icon = "rbxassetid://125416183674924",
         GitHubPath = "TTK%20TESTING",
         ShowInUI = true,
+        Status = "Undetected",
     },
     [9534705677] = {
         Name = "Sniper Arena",
@@ -35,6 +38,7 @@ local SUPPORTED_GAMES = {
         Icon = "rbxassetid://75649814233484",
         GitHubPath = "Sniper%20Arena",
         ShowInUI = true,
+        Status = "Undetected",
     },
     [5166944221] = {
         Name = "Death Ball",
@@ -42,6 +46,7 @@ local SUPPORTED_GAMES = {
         Icon = "rbxassetid://121406454377051",
         GitHubPath = "Death%20Ball",
         ShowInUI = true,
+        Status = "Undetected",
     },
     [7264587281] = {
         Name = "Sniper Duels",
@@ -49,6 +54,7 @@ local SUPPORTED_GAMES = {
         Icon = "rbxassetid://137351193301090",
         GitHubPath = "Sniper%20Duels",
         ShowInUI = true,
+        Status = "Updating",
     },
     [5091490171] = {
         Name = "Jailbird",
@@ -56,6 +62,7 @@ local SUPPORTED_GAMES = {
         Icon = "rbxassetid://85112456002145",
         GitHubPath = "Jailbird",
         ShowInUI = true,
+        Status = "Undetected",
     },
     [7265339759] = {
         Name = "Redliner",
@@ -63,6 +70,7 @@ local SUPPORTED_GAMES = {
         Icon = "rbxassetid://121406454377051",
         GitHubPath = "Redliner",
         ShowInUI = true,
+        Status = "Undetected",
     },
 }
 
@@ -88,6 +96,15 @@ local TopLineConfig = {
     }
 }
 
+
+
+local STATUS_COLORS = {
+    ["Undetected"] = Color3.fromRGB(80, 220, 130),
+    ["Detected"] = Color3.fromRGB(230, 210, 60),
+    ["Updating"] = Color3.fromRGB(230, 140, 40),
+    ["Down"] = Color3.fromRGB(220, 80, 80),
+}
+
 local Theme = {
     Inline = Color3.fromRGB(50, 50, 50),
     Gradient = Color3.fromRGB(40, 40, 40),
@@ -110,23 +127,72 @@ local Theme = {
 
 local CustomFontEnum = Enum.Font.SourceSans
 local CustomFontBoldEnum = Enum.Font.SourceSansBold
+local CustomFontFace = nil
+
+local baseFolder = 'OsamaHub'
+local fontsFolder = baseFolder .. '/Fonts'
+if not isfolder then isfolder = function() return false end end
+if not makefolder then makefolder = function() end end
+if not isfile then isfile = function() return false end end
+if not writefile then writefile = function() end end
+if not getcustomasset then getcustomasset = function() return "" end end
 
 pcall(function()
-    for _, font in pairs(Enum.Font:GetEnumItems()) do
-        if font.Name == "Verdana" then
-            CustomFontEnum = Enum.Font.Verdana
-            CustomFontBoldEnum = Enum.Font.VerdanaBold
-            break
+    if not isfolder(baseFolder) then makefolder(baseFolder) end
+    if not isfolder(fontsFolder) then makefolder(fontsFolder) end
+end)
+
+local FontsToDownload = {
+    ["SmallestPixel"] = {Link = "https://github.com/i77lhm/storage/raw/main/fonts/smallest_pixel-7.ttf"},
+}
+
+pcall(function()
+    for Name, Data in pairs(FontsToDownload) do
+        local ttfPath = fontsFolder .. '/' .. Name .. '.ttf'
+        if not isfile(ttfPath) then
+            pcall(function()
+                local data = game:HttpGet(Data.Link)
+                if type(data) == 'string' and #data > 100 then
+                    writefile(ttfPath, data)
+                end
+            end)
+        end
+        if isfile(ttfPath) then
+            pcall(function()
+                local assetId = getcustomasset(ttfPath)
+                if assetId and assetId ~= "" then
+                    CustomFontFace = Font.new(assetId, Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+                end
+            end)
         end
     end
 end)
 
+if not CustomFontFace then
+    pcall(function()
+        for _, font in pairs(Enum.Font:GetEnumItems()) do
+            if font.Name == "Verdana" then
+                CustomFontEnum = Enum.Font.Verdana
+                CustomFontBoldEnum = Enum.Font.VerdanaBold
+                break
+            end
+        end
+    end)
+end
+
 local function ApplyFont(instance, bold)
-    pcall(function() instance.Font = bold and CustomFontBoldEnum or CustomFontEnum end)
+    if CustomFontFace then
+        pcall(function()
+            instance.FontFace = CustomFontFace
+        end)
+    else
+        pcall(function() instance.Font = bold and CustomFontBoldEnum or CustomFontEnum end)
+    end
 end
 
 local Loader = {
     Connections = {},
+    StatusLabel = nil,
     GUI = nil,
     Destroyed = false,
     SelectedGame = nil,
@@ -624,7 +690,10 @@ local function CreateLoaderUI()
 
     local _, lastUpdateLabel = CreateInfoRow(infoContent, "Last Update", "Loading...", Theme.TextDim, 5)
     Loader.LastUpdateLabels[1] = lastUpdateLabel
-    CreateInfoRow(infoContent, "Status", "Undetected", Theme.Success, 6)
+    local currentStatusText = (Loader.SelectedGame and Loader.SelectedGame.Status) or "Undetected"
+    local currentStatusColor = STATUS_COLORS[currentStatusText] or Theme.TextColor
+    local _, statusValueLabel = CreateInfoRow(infoContent, "Status", currentStatusText, currentStatusColor, 6)
+    Loader.StatusLabel = statusValueLabel
 
     CreateSectionHeader(infoContent, "ADDITIONAL INFO", 7)
 
@@ -684,6 +753,11 @@ local function CreateLoaderUI()
                 setSelected(true)
                 Loader.SelectedGame = gameData
                 Loader.InfoTitle.Text = gameData.Name
+                if Loader.StatusLabel then
+                    local status = gameData.Status or "Undetected"
+                    Loader.StatusLabel.Text = status
+                    Loader.StatusLabel.TextColor3 = STATUS_COLORS[status] or Theme.TextColor
+                end
                 if Loader.LastUpdateLabels[1] then
                     Loader.LastUpdateLabels[1].Text = "Loading..."
                     Loader.LastUpdateLabels[1].TextColor3 = Theme.TextDim
@@ -707,6 +781,11 @@ local function CreateLoaderUI()
             info.setSelected(true)
             Loader.SelectedGame = SUPPORTED_GAMES[currentGameId]
             Loader.InfoTitle.Text = SUPPORTED_GAMES[currentGameId].Name
+            if Loader.StatusLabel then
+                local status = SUPPORTED_GAMES[currentGameId].Status or "Undetected"
+                Loader.StatusLabel.Text = status
+                Loader.StatusLabel.TextColor3 = STATUS_COLORS[status] or Theme.TextColor
+            end
             FetchLastUpdate(SUPPORTED_GAMES[currentGameId].GitHubPath, function(relativeTime)
                 if Loader.LastUpdateLabels[1] and Loader.LastUpdateLabels[1].Parent then
                     Loader.LastUpdateLabels[1].Text = relativeTime
@@ -731,4 +810,61 @@ end
 local existingLoader = CoreGui:FindFirstChild("OsamaHubLoader")
 if existingLoader then existingLoader:Destroy() end
 
-CreateLoaderUI()
+local preloadedKey = (getgenv and getgenv().lp_key) or _G.lp_key
+local currentGameId = game.GameId
+local currentGameData = SUPPORTED_GAMES[currentGameId]
+
+if preloadedKey and type(preloadedKey) == "string" and #preloadedKey == KEY_LENGTH and currentGameData then
+    ValidateKey(preloadedKey, function(success, message, data)
+        if success then
+            local expiry = data and tonumber(data.expire)
+            local isExpired = expiry and expiry < 0
+
+            if isExpired then
+                CreateLoaderUI()
+                task.wait(0.3)
+                if Loader.KeyInput then
+                    Loader.KeyInput.Text = preloadedKey
+                end
+                Loader.KeyValid = false
+                Loader.ValidatedKey = nil
+                if Loader.KeyTimeLabels[1] then
+                    Loader.KeyTimeLabels[1].Text = "Expired"
+                    Loader.KeyTimeLabels[1].TextColor3 = Theme.Error
+                end
+                task.wait(0.6)
+                CreateNotification(Loader.GUI, "Key Expired", "Your key has expired, please get a new one", "Error", 6)
+            else
+                LoadGameScript(currentGameData.ScriptId, preloadedKey)
+            end
+        else
+            CreateLoaderUI()
+            task.wait(0.3)
+            if Loader.KeyInput then
+                Loader.KeyInput.Text = preloadedKey
+            end
+            Loader.KeyValid = false
+            Loader.ValidatedKey = nil
+            if Loader.KeyTimeLabels[1] then
+                Loader.KeyTimeLabels[1].Text = "Expired"
+                Loader.KeyTimeLabels[1].TextColor3 = Theme.Error
+            end
+            task.wait(0.6)
+            CreateNotification(Loader.GUI, "Key Expired", "Your key has expired, please get a new one", "Error", 6)
+        end
+    end)
+else
+    CreateLoaderUI()
+    if preloadedKey and type(preloadedKey) == "string" and #preloadedKey == KEY_LENGTH then
+        task.wait(0.3)
+        if Loader.KeyInput then
+            Loader.KeyInput.Text = preloadedKey
+        end
+    end
+    if preloadedKey and currentGameData == nil then
+        task.wait(0.6)
+        if Loader.GUI then
+            CreateNotification(Loader.GUI, "Unsupported Game", "This game is not supported by OsamaHub", "Error", 5)
+        end
+    end
+end
