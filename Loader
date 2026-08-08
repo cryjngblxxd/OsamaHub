@@ -13,7 +13,7 @@ local SUPPORTED_GAMES = {
         ScriptId = "55820414431122873263",
         Icon = "rbxassetid://91586468475195",
         GitHubPath = "OperationOne",
-        ShowInUI = true,
+        ShowInUI = false,
         Status = "Undetected",
     },
     [323675642] = {
@@ -21,7 +21,7 @@ local SUPPORTED_GAMES = {
         ScriptId = "51021004320927609743",
         Icon = "rbxassetid://135412900878575",
         GitHubPath = "Flood%20Escape%202",
-        ShowInUI = true,
+        ShowInUI = false,
         Status = "Undetected",
     },
     [10090256806] = {
@@ -29,7 +29,7 @@ local SUPPORTED_GAMES = {
         ScriptId = "48064327276179372357",
         Icon = "rbxassetid://125416183674924",
         GitHubPath = "TTK%20TESTING",
-        ShowInUI = true,
+        ShowInUI = false,
         Status = "Undetected",
     },
     [9534705677] = {
@@ -37,7 +37,7 @@ local SUPPORTED_GAMES = {
         ScriptId = "10147249909712019408",
         Icon = "rbxassetid://75649814233484",
         GitHubPath = "Sniper%20Arena",
-        ShowInUI = true,
+        ShowInUI = false,
         Status = "Undetected",
     },
     [5166944221] = {
@@ -45,15 +45,15 @@ local SUPPORTED_GAMES = {
         ScriptId = "13155764070449933538",
         Icon = "rbxassetid://121406454377051",
         GitHubPath = "Death%20Ball",
-        ShowInUI = true,
+        ShowInUI = false,
         Status = "Undetected",
     },
     [7264587281] = {
         Name = "Sniper Duels",
-        ScriptId = "SCRIPT_ID_HERE",
+        ScriptId = "33168568395076817562",
         Icon = "rbxassetid://137351193301090",
         GitHubPath = "Sniper%20Duels",
-        ShowInUI = true,
+        ShowInUI = false,
         Status = "Updating",
     },
     [5091490171] = {
@@ -69,7 +69,7 @@ local SUPPORTED_GAMES = {
         ScriptId = "00709564188772914989",
         Icon = "rbxassetid://121406454377051",
         GitHubPath = "Redliner",
-        ShowInUI = true,
+        ShowInUI = false,
         Status = "Undetected",
     },
 }
@@ -80,7 +80,6 @@ local KEY_LINK = 'https://www.osamahub.xyz/'
 local DISCORD_CODE = 'GTJj2Q8R'
 local DISCORD_DECAL_ID = "116335568857781"
 local KEY_LENGTH = 24
-local LUAPROT_CHECK_SCRIPT_ID = "00709564188772914989"
 
 local UNSUPPORTED_EXECUTORS = {
     ["xeno"] = true,
@@ -95,8 +94,6 @@ local TopLineConfig = {
         color2 = Color3.fromRGB(225, 195, 240),
     }
 }
-
-
 
 local STATUS_COLORS = {
     ["Undetected"] = Color3.fromRGB(80, 220, 130),
@@ -207,6 +204,7 @@ local Loader = {
     UpdateCache = {},
     InfoScroll = nil,
     ValidatedKey = nil,
+    ValidatedScriptId = nil,
 }
 
 local function Create(className, properties)
@@ -427,13 +425,27 @@ local function CreateNotification(parent, title, message, notifType, duration)
     return notif
 end
 
-local function ValidateKey(key, callback)
+local function ValidateKey(key, scriptId, callback)
+    if type(scriptId) == "function" then
+        callback = scriptId
+        scriptId = nil
+    end
+
+    scriptId = tostring(scriptId or ""):gsub("%s", "")
+    key = tostring(key or ""):gsub("%s", "")
+
+    if scriptId == "" or scriptId == "SCRIPT_ID_HERE" then
+        callback(false, "No valid script selected", nil)
+        return
+    end
+
     task.spawn(function()
         local success, result = pcall(function()
             local sdk = loadstring(game:HttpGet("https://sdk.luaprot.net/"))()
-            sdk.scriptId = LUAPROT_CHECK_SCRIPT_ID
+            sdk.scriptId = scriptId
             return sdk:checkKey(key)
         end)
+
         if success and result and result.status == "VALID" then
             callback(true, "Valid", result.data)
         else
@@ -658,14 +670,23 @@ local function CreateLoaderUI()
             HideInjectSection()
             return
         end
+        if not Loader.SelectedGame then
+            CreateNotification(screenGui, "No Game Selected", "Select a game from the list before checking your key", "Warning", 4)
+            return
+        end
+        if Loader.SelectedGame.ScriptId == "SCRIPT_ID_HERE" or not Loader.SelectedGame.ScriptId or Loader.SelectedGame.ScriptId == "" then
+            CreateNotification(screenGui, "Script Not Ready", Loader.SelectedGame.Name.." is not yet configured", "Warning", 3)
+            return
+        end
         checking = true
         checkKeyBtn.Text = "Checking..."
-        ValidateKey(key, function(success, message, data)
+        ValidateKey(key, Loader.SelectedGame.ScriptId, function(success, message, data)
             checking = false
             checkKeyBtn.Text = "Check Key"
             if success then
                 Loader.KeyValid = true
                 Loader.ValidatedKey = key
+                Loader.ValidatedScriptId = Loader.SelectedGame.ScriptId
                 local expiryText = FormatExpiry(data)
                 if Loader.KeyTimeLabels[1] then
                     Loader.KeyTimeLabels[1].Text = expiryText
@@ -676,6 +697,7 @@ local function CreateLoaderUI()
             else
                 Loader.KeyValid = false
                 Loader.ValidatedKey = nil
+                Loader.ValidatedScriptId = nil
                 if Loader.KeyTimeLabels[1] then
                     Loader.KeyTimeLabels[1].Text = "Invalid"
                     Loader.KeyTimeLabels[1].TextColor3 = Theme.Error
@@ -768,7 +790,18 @@ local function CreateLoaderUI()
                         end
                     end)
                 end
-                if Loader.KeyValid then ShowInjectSection() end
+                if Loader.KeyValid and Loader.ValidatedScriptId ~= gameData.ScriptId then
+                    Loader.KeyValid = false
+                    Loader.ValidatedKey = nil
+                    Loader.ValidatedScriptId = nil
+                    if Loader.KeyTimeLabels[1] then
+                        Loader.KeyTimeLabels[1].Text = "Not checked"
+                        Loader.KeyTimeLabels[1].TextColor3 = Theme.TextDim
+                    end
+                    HideInjectSection()
+                elseif Loader.KeyValid then
+                    ShowInjectSection()
+                end
             end)
             Loader.GameButtons[gameId] = {btn = btn, setSelected = setSelected}
             order = order + 1
@@ -814,8 +847,8 @@ local preloadedKey = (getgenv and getgenv().lp_key) or _G.lp_key
 local currentGameId = game.GameId
 local currentGameData = SUPPORTED_GAMES[currentGameId]
 
-if preloadedKey and type(preloadedKey) == "string" and #preloadedKey == KEY_LENGTH and currentGameData then
-    ValidateKey(preloadedKey, function(success, message, data)
+if preloadedKey and type(preloadedKey) == "string" and #preloadedKey == KEY_LENGTH and currentGameData and currentGameData.ScriptId and currentGameData.ScriptId ~= "SCRIPT_ID_HERE" then
+    ValidateKey(preloadedKey, currentGameData.ScriptId, function(success, message, data)
         if success then
             local expiry = data and tonumber(data.expire)
             local isExpired = expiry and expiry < 0
@@ -828,6 +861,7 @@ if preloadedKey and type(preloadedKey) == "string" and #preloadedKey == KEY_LENG
                 end
                 Loader.KeyValid = false
                 Loader.ValidatedKey = nil
+                Loader.ValidatedScriptId = nil
                 if Loader.KeyTimeLabels[1] then
                     Loader.KeyTimeLabels[1].Text = "Expired"
                     Loader.KeyTimeLabels[1].TextColor3 = Theme.Error
@@ -845,12 +879,13 @@ if preloadedKey and type(preloadedKey) == "string" and #preloadedKey == KEY_LENG
             end
             Loader.KeyValid = false
             Loader.ValidatedKey = nil
+            Loader.ValidatedScriptId = nil
             if Loader.KeyTimeLabels[1] then
-                Loader.KeyTimeLabels[1].Text = "Expired"
+                Loader.KeyTimeLabels[1].Text = "Invalid"
                 Loader.KeyTimeLabels[1].TextColor3 = Theme.Error
             end
             task.wait(0.6)
-            CreateNotification(Loader.GUI, "Key Expired", "Your key has expired, please get a new one", "Error", 6)
+            CreateNotification(Loader.GUI, "Key Check Failed", message or "Please verify your key", "Error", 6)
         end
     end)
 else
