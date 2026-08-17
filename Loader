@@ -37,7 +37,7 @@ local SUPPORTED_GAMES = {
         ScriptId = "10147249909712019408",
         Icon = "rbxassetid://75649814233484",
         GitHubPath = "Sniper%20Arena",
-        ShowInUI = false,
+        ShowInUI = true,
         Status = "Undetected",
     },
     [5166944221] = {
