@@ -13,7 +13,7 @@ local SUPPORTED_GAMES = {
         ScriptId = "55820414431122873263",
         Icon = "rbxassetid://91586468475195",
         GitHubPath = "OperationOne",
-        ShowInUI = false,
+        ShowInUI = true,
         Status = "Undetected",
     },
     [323675642] = {
